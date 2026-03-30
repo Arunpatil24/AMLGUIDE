@@ -1,0 +1,822 @@
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">  
+<title>AML Intelligence · Transaction Monitoring</title>  
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">  
+<style>  
+*{margin:0;padding:0;box-sizing:border-box}  
+:root{  
+  --void:#020408;--deep:#040c14;--panel:#071220;--glass:rgba(0,200,255,0.04);  
+  --border:rgba(0,200,255,0.12);--border2:rgba(0,200,255,0.25);  
+  --cyan:#00c8ff;--cyan2:#00f5ff;--amber:#ffb700;--red:#ff2d55;--green:#00ff9d;  
+  --text:#a8cce0;--text2:#5a8aaa;--head:#e0f4ff;  
+  --mono:'Share Tech Mono',monospace;--title:'Orbitron',sans-serif;--body:'Rajdhani',sans-serif;  
+}  
+html{scroll-behavior:smooth}  
+*{cursor:none}  
+#cursor{position:fixed;width:12px;height:12px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform .1s,width .2s,height .2s;mix-blend-mode:screen}  
+#cursor-ring{position:fixed;width:36px;height:36px;border:1px solid rgba(0,200,255,0.5);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .15s cubic-bezier(.25,.46,.45,.94),width .3s,height .3s;mix-blend-mode:screen}  
+.cursor-hover #cursor{width:20px;height:20px;background:var(--amber)}  
+.cursor-hover #cursor-ring{width:52px;height:52px;border-color:var(--amber)}  
+body{background:var(--void);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.6;overflow-x:hidden;}  
+body::after{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:1;}  
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:.6}  /* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:20px 60px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to bottom,rgba(2,4,8,.95),transparent);border-bottom:1px solid transparent;transition:border-color .3s,background .3s;}
+nav.scrolled{border-bottom-color:var(--border);background:rgba(2,4,8,.95)}
+.nav-logo{font-family:var(--title);font-size:14px;letter-spacing:.2em;color:var(--cyan);display:flex;align-items:center;gap:10px}
+.nav-logo-dot{width:8px;height:8px;background:var(--cyan);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,200,255,.4)}50%{box-shadow:0 0 0 8px rgba(0,200,255,0)}}
+.nav-links{display:flex;gap:32px}
+.nav-links a{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--text2);text-decoration:none;transition:color .2s;text-transform:uppercase}
+.nav-links a:hover{color:var(--cyan)}
+.nav-cta{font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding:8px 20px;border:1px solid var(--cyan);color:var(--cyan);text-decoration:none;text-transform:uppercase;transition:all .2s;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)}
+.nav-cta:hover{background:var(--cyan);color:var(--void)}
+
+/* HERO */
+section{position:relative;z-index:2}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:120px 60px 80px;text-align:center;position:relative;overflow:hidden;}
+.hero-grid-lines{position:absolute;inset:0;background-image:linear-gradient(rgba(0,200,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,.03) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);}
+.hero-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(0,200,255,.08) 0%,transparent 70%);animation:breathe 4s ease-in-out infinite;}
+@keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.15)}}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.25em;color:var(--cyan);text-transform:uppercase;margin-bottom:24px;opacity:0;animation:fadeUp .8s ease .3s forwards;display:flex;align-items:center;justify-content:center;gap:16px;}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';width:40px;height:1px;background:var(--cyan);opacity:.5}
+.hero-title{font-family:var(--title);font-size:clamp(36px,6vw,80px);font-weight:900;color:var(--head);line-height:1.05;margin-bottom:12px;opacity:0;animation:fadeUp .8s ease .5s forwards;}
+.hero-title .line2{display:block;background:linear-gradient(135deg,var(--cyan),var(--cyan2),var(--amber));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:18px;color:var(--text2);max-width:560px;margin:0 auto 48px;opacity:0;animation:fadeUp .8s ease .7s forwards;font-weight:300;}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp .8s ease .9s forwards;}
+.btn-primary{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:14px 32px;background:var(--cyan);color:var(--void);text-decoration:none;font-weight:700;clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);transition:all .2s;display:inline-block;}
+.btn-primary:hover{background:var(--cyan2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,200,255,.3)}
+.btn-ghost{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:14px 32px;border:1px solid var(--border2);color:var(--text);text-decoration:none;clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);transition:all .2s;display:inline-block;}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px)}
+.hero-stats{display:flex;gap:0;justify-content:center;margin-top:80px;opacity:0;animation:fadeUp .8s ease 1.1s forwards;}
+.hero-stat{padding:20px 40px;border-left:1px solid var(--border);text-align:center;}
+.hero-stat:first-child{border-left:none}
+.hero-stat .n{font-family:var(--title);font-size:36px;font-weight:700;color:var(--cyan);display:block;line-height:1}
+.hero-stat .l{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text2);margin-top:4px;text-transform:uppercase}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.scroll-hint{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text2);display:flex;flex-direction:column;align-items:center;gap:8px;animation:fadeUp .8s ease 1.5s forwards;opacity:0;}
+.scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--cyan),transparent);animation:scrollLine 1.5s ease-in-out infinite}
+@keyframes scrollLine{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* GLITCH */
+.glitch{position:relative}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;font-family:inherit;font-size:inherit;font-weight:inherit;color:inherit;clip:rect(0,900px,0,0);}
+.glitch::before{text-shadow:-2px 0 var(--red);animation:glitch1 3s infinite linear alternate-reverse}
+.glitch::after{text-shadow:2px 0 var(--cyan);animation:glitch2 3s infinite linear alternate-reverse}
+@keyframes glitch1{0%{clip:rect(42px,9999px,44px,0)}20%{clip:rect(85px,9999px,140px,0)}40%{clip:rect(10px,9999px,82px,0)}60%{clip:rect(65px,9999px,115px,0)}80%{clip:rect(20px,9999px,70px,0)}100%{clip:rect(0,0,0,0)}}
+@keyframes glitch2{0%{clip:rect(0,0,0,0)}20%{clip:rect(30px,9999px,90px,0)}40%{clip:rect(60px,9999px,120px,0)}60%{clip:rect(15px,9999px,55px,0)}80%{clip:rect(40px,9999px,100px,0)}100%{clip:rect(75px,9999px,130px,0)}}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity .8s ease,transform .8s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* SECTIONS */
+.section-wrap{padding:100px 60px;max-width:1200px;margin:0 auto}
+.section-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--cyan);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.section-label::before{content:'';width:30px;height:1px;background:var(--cyan)}
+.section-title{font-family:var(--title);font-size:clamp(28px,4vw,46px);font-weight:700;color:var(--head);line-height:1.15;margin-bottom:20px}
+.section-sub{font-size:17px;color:var(--text2);max-width:560px;font-weight:300}
+
+/* FEATURES */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);margin-top:60px}
+.feat-card{background:var(--deep);padding:40px 32px;position:relative;overflow:hidden;transition:background .3s;}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);transform:scaleX(0);transition:transform .4s ease;}
+.feat-card:hover::before{transform:scaleX(1)}
+.feat-card:hover{background:rgba(0,200,255,.03)}
+.feat-icon{width:48px;height:48px;margin-bottom:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);font-size:22px;position:relative;}
+.feat-icon::after{content:'';position:absolute;inset:-1px;border:1px solid var(--cyan);opacity:0;transition:opacity .3s}
+.feat-card:hover .feat-icon::after{opacity:1}
+.feat-title{font-family:var(--title);font-size:14px;font-weight:600;color:var(--head);margin-bottom:12px;letter-spacing:.05em}
+.feat-text{font-size:15px;color:var(--text2);line-height:1.6;font-weight:300}
+.feat-arrow{display:inline-flex;align-items:center;gap:8px;margin-top:20px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--cyan);opacity:0;transform:translateX(-10px);transition:all .3s;}
+.feat-card:hover .feat-arrow{opacity:1;transform:translateX(0)}
+
+/* TABS */
+.tabs-section{background:var(--deep);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.tabs-header{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab-btn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:20px 32px;color:var(--text2);border:none;background:transparent;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;position:relative;}
+.tab-btn::after{content:attr(data-num);position:absolute;top:12px;right:12px;font-size:9px;color:var(--text2);opacity:.5;}
+.tab-btn.active{color:var(--cyan);border-bottom-color:var(--cyan);background:rgba(0,200,255,.04)}
+.tab-btn:hover:not(.active){color:var(--text);background:rgba(255,255,255,.02)}
+.tab-panel{display:none;animation:tabFade .4s ease}
+.tab-panel.active{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;padding:60px}
+@keyframes tabFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.tab-content h3{font-family:var(--title);font-size:20px;color:var(--head);margin-bottom:16px}
+.tab-content p{color:var(--text2);font-size:15px;line-height:1.7;font-weight:300;margin-bottom:16px}
+.tab-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.tab-list li{display:flex;gap:12px;align-items:flex-start;font-size:15px;color:var(--text);padding:12px 16px;background:rgba(0,200,255,.03);border-left:2px solid transparent;transition:all .2s;}
+.tab-list li:hover{border-left-color:var(--cyan);background:rgba(0,200,255,.06);transform:translateX(4px)}
+.tab-list li .dot{color:var(--cyan);font-size:16px;flex-shrink:0;margin-top:1px}
+.info-box{background:var(--panel);border:1px solid var(--border);padding:24px;margin-bottom:16px;position:relative;overflow:hidden;}
+.info-box::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--cyan)}
+.info-box-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--cyan);margin-bottom:8px}
+.info-box-val{font-family:var(--title);font-size:24px;color:var(--head);font-weight:700}
+.info-box-sub{font-size:13px;color:var(--text2);margin-top:4px}
+.progress-track{background:rgba(255,255,255,.06);height:4px;border-radius:0;margin-top:8px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--cyan),var(--cyan2));border-radius:0;width:0;transition:width 1.5s ease}
+
+/* TICKER */
+.ticker-section{padding:24px 0;background:rgba(0,200,255,.03);border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;position:relative;z-index:2}
+.ticker-wrap{display:flex;gap:0;white-space:nowrap;animation:ticker 40s linear infinite}
+.ticker-wrap:hover{animation-play-state:paused}
+.ticker-item{font-family:var(--mono);font-size:12px;letter-spacing:.05em;padding:0 40px;color:var(--text2);border-right:1px solid var(--border);display:inline-flex;align-items:center;gap:10px;}
+.ticker-item .flag{color:var(--red);font-size:14px}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* CASES */
+.cases-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:60px}
+.case-card{background:var(--deep);border:1px solid var(--border);padding:28px;position:relative;overflow:hidden;cursor:pointer;transition:all .3s;}
+.case-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,200,255,.05),transparent);opacity:0;transition:opacity .3s;}
+.case-card:hover{border-color:var(--border2);transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.4)}
+.case-card:hover::after{opacity:1}
+.case-num{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--cyan);margin-bottom:14px}
+.case-title{font-family:var(--title);font-size:13px;color:var(--head);margin-bottom:12px;line-height:1.4}
+.case-desc{font-size:13.5px;color:var(--text2);line-height:1.6;font-weight:300;margin-bottom:16px}
+.case-verdict{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:4px 10px;}
+.case-verdict.sar{background:rgba(255,45,85,.1);color:var(--red);border:1px solid rgba(255,45,85,.2)}
+.case-verdict.clear{background:rgba(0,255,157,.08);color:var(--green);border:1px solid rgba(0,255,157,.2)}
+.case-verdict.pending{background:rgba(255,183,0,.08);color:var(--amber);border:1px solid rgba(255,183,0,.2)}
+.case-open{position:absolute;top:20px;right:20px;width:30px;height:30px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text2);transition:all .3s;}
+.case-card:hover .case-open{border-color:var(--cyan);color:var(--cyan);transform:rotate(45deg)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(2,4,8,.9);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px);}
+.modal-overlay.open{display:flex;animation:modalIn .3s ease}
+@keyframes modalIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--deep);border:1px solid var(--border2);max-width:700px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:modalSlide .3s ease;}
+@keyframes modalSlide{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal::-webkit-scrollbar{width:4px}
+.modal::-webkit-scrollbar-thumb{background:var(--border2)}
+.modal-header{padding:28px 32px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.modal-close{width:36px;height:36px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:18px;flex-shrink:0;transition:all .2s;}
+.modal-close:hover{border-color:var(--red);color:var(--red)}
+.modal-body{padding:28px 32px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.mfield label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--cyan);display:block;margin-bottom:6px}
+.mfield p{font-size:14px;color:var(--text);line-height:1.5}
+.modal-verdict{padding:16px 20px;margin-top:8px;font-size:14px;font-weight:500;}
+.modal-verdict.sar{background:rgba(255,45,85,.06);border:1px solid rgba(255,45,85,.2);color:#ff8099}
+.modal-verdict.clear{background:rgba(0,255,157,.06);border:1px solid rgba(0,255,157,.2);color:var(--green)}
+
+/* TIMELINE */
+.timeline{position:relative;margin-top:60px}
+.timeline::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,var(--cyan),transparent);transform:translateX(-50%);}
+.tl-item{display:grid;grid-template-columns:1fr 60px 1fr;gap:0;margin-bottom:40px;align-items:center;}
+.tl-item:nth-child(even) .tl-left{grid-column:3;order:3}
+.tl-item:nth-child(even) .tl-center{grid-column:2;order:2}
+.tl-item:nth-child(even) .tl-right{grid-column:1;order:1}
+.tl-left{padding-right:40px;text-align:right}
+.tl-right{padding-left:40px}
+.tl-item:nth-child(even) .tl-right{text-align:right;padding-right:40px;padding-left:0}
+.tl-item:nth-child(even) .tl-left{text-align:left;padding-left:40px;padding-right:0}
+.tl-center{display:flex;justify-content:center;align-items:center;z-index:1}
+.tl-dot{width:40px;height:40px;border:2px solid var(--cyan);background:var(--void);display:flex;align-items:center;justify-content:center;font-family:var(--title);font-size:12px;color:var(--cyan);font-weight:700;position:relative;}
+.tl-dot::before{content:'';position:absolute;inset:4px;background:rgba(0,200,255,.1)}
+.tl-card{background:var(--panel);border:1px solid var(--border);padding:20px;transition:all .3s;}
+.tl-card:hover{border-color:var(--border2);background:rgba(0,200,255,.04)}
+.tl-card h4{font-family:var(--title);font-size:13px;color:var(--head);margin-bottom:8px}
+.tl-card p{font-size:13.5px;color:var(--text2);font-weight:300}
+.tl-blank{min-height:60px}
+
+/* RED FLAGS */
+.rf-section{background:var(--panel);border-top:1px solid var(--border)}
+.rf-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px}
+.rf-filter-btn{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:8px 16px;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .2s;}
+.rf-filter-btn.active,.rf-filter-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,200,255,.05)}
+.rf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.rf-item{padding:14px 16px;background:var(--deep);border:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;font-size:14px;transition:all .3s;}
+.rf-item.hidden{display:none}
+.rf-item:hover{border-color:var(--red);background:rgba(255,45,85,.03);transform:translateX(4px)}
+.rf-flag{color:var(--red);font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* QUIZ */
+.quiz-section{background:var(--void)}
+.quiz-card{background:var(--deep);border:1px solid var(--border);padding:40px;max-width:800px;margin:40px auto 0;position:relative;}
+.quiz-card::before{content:'';position:absolute;top:-1px;left:40px;right:40px;height:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent)}
+.quiz-q{font-family:var(--title);font-size:18px;color:var(--head);margin-bottom:24px;line-height:1.4}
+.quiz-scenario{background:var(--panel);border-left:3px solid var(--amber);padding:20px;font-size:14.5px;color:var(--text);line-height:1.7;margin-bottom:28px;font-weight:300;}
+.quiz-options{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.quiz-opt{padding:16px 20px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:var(--body);font-size:15px;text-align:left;transition:all .2s;display:flex;align-items:center;gap:14px;}
+.quiz-opt:hover:not(:disabled){border-color:var(--border2);background:rgba(0,200,255,.04);color:var(--head)}
+.quiz-opt.correct{border-color:var(--green)!important;background:rgba(0,255,157,.06)!important;color:var(--green)!important}
+.quiz-opt.wrong{border-color:var(--red)!important;background:rgba(255,45,85,.06)!important;color:var(--red)!important}
+.quiz-opt:disabled{opacity:.7}
+.quiz-opt-letter{width:28px;height:28px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--cyan);flex-shrink:0;}
+.quiz-result{padding:16px 20px;display:none;font-size:14px;line-height:1.6;border-left:3px solid transparent;}
+.quiz-result.show{display:block;animation:fadeUp .3s ease}
+.quiz-result.correct-res{border-left-color:var(--green);background:rgba(0,255,157,.05);color:#a0f0cf}
+.quiz-result.wrong-res{border-left-color:var(--red);background:rgba(255,45,85,.05);color:#ffaabb}
+.quiz-nav{display:flex;align-items:center;justify-content:space-between;margin-top:24px}
+.quiz-counter{font-family:var(--mono);font-size:12px;color:var(--text2)}
+.quiz-progress{display:flex;gap:4px}
+.quiz-dot{width:8px;height:8px;background:var(--border);transition:background .3s}
+.quiz-dot.done{background:var(--cyan)}
+.quiz-dot.current{background:var(--amber)}
+
+/* SCROLL PROGRESS */
+#scroll-progress{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--amber));z-index:200;width:0%;transition:width .1s}
+
+/* FOOTER */
+footer{background:var(--deep);border-top:1px solid var(--border);padding:60px;text-align:center;position:relative;z-index:2;}
+.footer-logo{font-family:var(--title);font-size:18px;color:var(--cyan);margin-bottom:16px;letter-spacing:.2em}
+.footer-text{font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:.1em}
+.footer-line{width:200px;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);margin:24px auto}
+
+@media(max-width:900px){
+nav{padding:16px 24px}.nav-links{display:none}
+.hero{padding:100px 24px 60px}
+.section-wrap{padding:60px 24px}
+.features-grid{grid-template-columns:1fr}
+.tab-panel.active{grid-template-columns:1fr;padding:32px 24px}
+.cases-grid{grid-template-columns:1fr}
+.timeline::before{display:none}
+.tl-item{grid-template-columns:1fr;gap:10px}
+.tl-item:nth-child(even) .tl-left,.tl-item:nth-child(even) .tl-right{order:unset;text-align:left;padding-left:0;padding-right:0}
+.tl-center{justify-content:flex-start}
+.tl-left,.tl-right{text-align:left!important;padding:0!important}
+.tl-blank{display:none}
+.modal-grid{grid-template-columns:1fr}
+.hero-stats{flex-wrap:wrap}
+.hero-stat{padding:16px 20px}
+footer{padding:40px 24px}
+}
+</style>
+
+</head>  
+<body>  <div id="cursor"></div>  
+<div id="cursor-ring"></div>  
+<div id="scroll-progress"></div>  
+<canvas id="bg-canvas"></canvas>  <!-- NAV -->  <nav id="navbar">  
+  <div class="nav-logo"><div class="nav-logo-dot"></div>AML · INTEL</div>  
+  <div class="nav-links">  
+    <a href="#framework">Framework</a>  
+    <a href="#process">Process</a>  
+    <a href="#cases">Cases</a>  
+    <a href="#redflags">Red Flags</a>  
+    <a href="#quiz">Quiz</a>  
+  </div>  
+  <a href="#quiz" class="nav-cta">Take Quiz</a>  
+</nav>  <!-- HERO -->  <section class="hero" id="home">  
+  <div class="hero-grid-lines"></div>  
+  <div class="hero-glow"></div>  
+  <div>  
+    <div class="hero-eyebrow">AML Intelligence Series · 2025 Edition</div>  
+    <h1 class="hero-title">  
+      Transaction  
+      <span class="line2 glitch" data-text="Monitoring">Monitoring</span>  
+    </h1>  
+    <p class="hero-sub">The definitive guide to detecting financial crime, money laundering, and suspicious activity across all banking channels.</p>  
+    <div class="hero-btns">  
+      <a href="#framework" class="btn-primary">Explore Framework →</a>  
+      <a href="#quiz" class="btn-ghost">Test Your Knowledge</a>  
+    </div>  
+    <div class="hero-stats">  
+      <div class="hero-stat"><span class="n" id="counter1">0</span><span class="l">Sections Covered</span></div>  
+      <div class="hero-stat"><span class="n" id="counter2">0</span><span class="l">Red Flags</span></div>  
+      <div class="hero-stat"><span class="n" id="counter3">0</span><span class="l">Case Studies</span></div>  
+      <div class="hero-stat"><span class="n" id="counter4">$0T</span><span class="l">Laundered Annually</span></div>  
+    </div>  
+  </div>  
+  <div class="scroll-hint"><span>SCROLL</span><div class="scroll-line"></div></div>  
+</section>  <!-- TICKER -->  <div class="ticker-section">  
+  <div class="ticker-wrap">  
+    <span class="ticker-item"><span class="flag">🚩</span>Structuring / Smurfing</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Rapid Movement of Funds</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Dormant Account Activity</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Round-Tripping</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Third-Party Deposits</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Mule Account Networks</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Trade-Based ML</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Shell Company Activity</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Cryptocurrency Mixing</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>PEP Suspicious Transfers</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Sanctions Evasion</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Terror Financing</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Structuring / Smurfing</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Rapid Movement of Funds</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Dormant Account Activity</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Round-Tripping</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Third-Party Deposits</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Mule Account Networks</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Trade-Based ML</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Shell Company Activity</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Cryptocurrency Mixing</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>PEP Suspicious Transfers</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Sanctions Evasion</span>  
+    <span class="ticker-item"><span class="flag">🚩</span>Terror Financing</span>  
+  </div>  
+</div>  <!-- FRAMEWORK -->  <section id="framework">  
+  <div class="section-wrap">  
+    <div class="reveal">  
+      <div class="section-label">AML Compliance Pillars</div>  
+      <h2 class="section-title">The Complete<br>Compliance Framework</h2>  
+      <p class="section-sub">Six interconnected defenses protecting the financial system from criminal exploitation.</p>  
+    </div>  
+    <div class="features-grid reveal">  
+      <div class="feat-card">  
+        <div class="feat-icon">🪪</div>  
+        <div class="feat-title">KYC</div>  
+        <p class="feat-text">Know Your Customer — identity verification, risk scoring, PEP screening, and address verification before onboarding.</p>  
+        <div class="feat-arrow">Learn More →</div>  
+      </div>  
+      <div class="feat-card">  
+        <div class="feat-icon">🔍</div>  
+        <div class="feat-title">CDD / EDD</div>  
+        <p class="feat-text">Customer Due Diligence and Enhanced Due Diligence — understanding source of funds, business purpose, and beneficial ownership.</p>  
+        <div class="feat-arrow">Learn More →</div>  
+      </div>  
+      <div class="feat-card">  
+        <div class="feat-icon">🛡️</div>  
+        <div class="feat-title">Sanctions Screening</div>  
+        <p class="feat-text">Real-time screening against OFAC SDN, UN, EU, MHA, and UAPA watchlists with fuzzy-matching algorithms.</p>  
+        <div class="feat-arrow">Learn More →</div>  
+      </div>  
+      <div class="feat-card">  
+        <div class="feat-icon">📊</div>  
+        <div class="feat-title">Transaction Monitoring</div>  
+        <p class="feat-text">Rule-based and AI-powered surveillance of financial transactions detecting anomalies, patterns, and typologies.</p>  
+        <div class="feat-arrow">Learn More →</div>  
+      </div>  
+      <div class="feat-card">  
+        <div class="feat-icon">📋</div>  
+        <div class="feat-title">SAR / STR Filing</div>  
+        <p class="feat-text">Suspicious Activity Reporting to FIU-IND within 7 days of suspicion — without tipping off the subject.</p>  
+        <div class="feat-arrow">Learn More →</div>  
+      </div>  
+      <div class="feat-card">  
+        <div class="feat-icon">📁</div>  
+        <div class="feat-title">Record Keeping</div>  
+        <p class="feat-text">Mandatory 5-year retention of all KYC, transaction, and investigation records for regulatory examination.</p>  
+        <div class="feat-arrow">Learn More →</div>  
+      </div>  
+    </div>  
+  </div>  
+</section>  <!-- TABS -->  <section class="tabs-section" id="typologies">  
+  <div class="section-wrap" style="padding-bottom:0">  
+    <div class="reveal">  
+      <div class="section-label">Financial Crime Typologies</div>  
+      <h2 class="section-title">Crime Categories & Indicators</h2>  
+    </div>  
+  </div>  
+  <div class="tabs-header reveal">  
+    <button class="tab-btn active" data-tab="t1" data-num="01">Money Laundering</button>  
+    <button class="tab-btn" data-tab="t2" data-num="02">Mule Accounts</button>  
+    <button class="tab-btn" data-tab="t3" data-num="03">Shell Companies</button>  
+    <button class="tab-btn" data-tab="t4" data-num="04">TBML</button>  
+    <button class="tab-btn" data-tab="t5" data-num="05">Crypto Crime</button>  
+  </div>  
+  <div class="tab-panel active" id="t1">  
+    <div class="tab-content">  
+      <h3>Money Laundering — Three Stages</h3>  
+      <p>Money laundering is the process of making criminal proceeds appear legitimate. Every case follows three predictable stages, each with distinct transaction signatures.</p>  
+      <ul class="tab-list">  
+        <li><span class="dot">▸</span><span><strong>Placement:</strong> Dirty cash enters banking system — structuring, smurfing, cash-intensive businesses</span></li>  
+        <li><span class="dot">▸</span><span><strong>Layering:</strong> Complex transfers obscure origin — wire transfers, shell entities, crypto conversions</span></li>  
+        <li><span class="dot">▸</span><span><strong>Integration:</strong> Clean money re-enters economy — real estate, business income, investments</span></li>  
+        <li><span class="dot">▸</span><span><strong>India Context:</strong> PMLA 2002 covers all three stages; FIU-IND receives STRs from all reporting entities</span></li>  
+      </ul>  
+    </div>  
+    <div class="tab-visual">  
+      <div class="info-box"><div class="info-box-label">Global Scale</div><div class="info-box-val">$800B – $2T</div><div class="info-box-sub">Laundered globally every year (UNODC)</div><div class="progress-track"><div class="progress-bar" data-width="85"></div></div></div>  
+      <div class="info-box"><div class="info-box-label">Detection Rate</div><div class="info-box-val">1 – 2%</div><div class="info-box-sub">Of laundered funds ever detected</div><div class="progress-track"><div class="progress-bar" data-width="2" style="background:var(--red)"></div></div></div>  
+      <div class="info-box"><div class="info-box-label">India STR Deadline</div><div class="info-box-val">7 Days</div><div class="info-box-sub">From suspicion arising — PMLA requirement</div><div class="progress-track"><div class="progress-bar" data-width="100" style="background:var(--amber)"></div></div></div>  
+    </div>  
+  </div>  
+  <div class="tab-panel" id="t2">  
+    <div class="tab-content">  
+      <h3>Money Mule Accounts</h3>  
+      <p>Mule accounts are used as intermediary channels to receive and forward criminal proceeds — often without the account holder's full awareness.</p>  
+      <ul class="tab-list">  
+        <li><span class="dot">▸</span><span>Recruited via fake job ads, social media, or peer pressure</span></li>  
+        <li><span class="dot">▸</span><span>Receive funds from multiple unknown payors</span></li>  
+        <li><span class="dot">▸</span><span>Immediately forward 90%+ to other accounts — zero retention</span></li>  
+        <li><span class="dot">▸</span><span>Keep 5–10% as "commission"</span></li>  
+        <li><span class="dot">▸</span><span>Common in UPI fraud, phishing, cyber crime settlement</span></li>  
+        <li><span class="dot">▸</span><span>Red flag: new account + rapid pass-through activity</span></li>  
+      </ul>  
+    </div>  
+    <div class="tab-visual">  
+      <div class="info-box"><div class="info-box-label">Key Indicator</div><div class="info-box-val">Pass-Through %</div><div class="info-box-sub">90%+ of inflows immediately transferred out</div><div class="progress-track"><div class="progress-bar" data-width="90" style="background:var(--red)"></div></div></div>  
+      <div class="info-box"><div class="info-box-label">Common Channel</div><div class="info-box-val">UPI / IMPS</div><div class="info-box-sub">Instant settlement makes mule networks fast-moving</div><div class="progress-track"><div class="progress-bar" data-width="70"></div></div></div>  
+      <div class="info-box"><div class="info-box-label">Account Age Risk</div><div class="info-box-val">&lt; 6 Months</div><div class="info-box-sub">New accounts showing high velocity are highest risk</div><div class="progress-track"><div class="progress-bar" data-width="95" style="background:var(--amber)"></div></div></div>  
+    </div>  
+  </div>  
+  <div class="tab-panel" id="t3">  
+    <div class="tab-content">  
+      <h3>Shell Company Activity</h3>  
+      <p>Shell companies — entities with no real operations — are the most versatile layering tool in money laundering.</p>  
+      <ul class="tab-list">  
+        <li><span class="dot">▸</span><span>Registered in secrecy jurisdictions: BVI, Cayman, Seychelles, Panama</span></li>  
+        <li><span class="dot">▸</span><span>Nominee directors disguise true beneficial owner</span></li>  
+        <li><span class="dot">▸</span><span>Pay vague "consulting fees," "management charges," "IP royalties"</span></li>  
+        <li><span class="dot">▸</span><span>Used in round-tripping, loan-back schemes, and FDI manipulation</span></li>  
+        <li><span class="dot">▸</span><span>Red flags: no employees, no physical address, frequent director changes</span></li>  
+      </ul>  
+    </div>  
+    <div class="tab-visual">  
+      <div class="info-box"><div class="info-box-label">Common Jurisdictions</div><div class="info-box-val">BVI · Cayman · Panama</div><div class="info-box-sub">Low/no corporate tax, strong secrecy laws</div><div class="progress-track"><div class="progress-bar" data-width="75" style="background:var(--red)"></div></div></div>  
+      <div class="info-box"><div class="info-box-label">Detection Challenge</div><div class="info-box-val">Beneficial Ownership</div><div class="info-box-sub">True owner hidden behind layers of nominee structures</div><div class="progress-track"><div class="progress-bar" data-width="88"></div></div></div>  
+    </div>  
+  </div>  
+  <div class="tab-panel" id="t4">  
+    <div class="tab-content">  
+      <h3>Trade-Based Money Laundering</h3>  
+      <p>TBML exploits international trade to move value across borders while evading financial scrutiny.</p>  
+      <ul class="tab-list">  
+        <li><span class="dot">▸</span><span><strong>Over-invoicing exports:</strong> Receive more than goods are worth</span></li>  
+        <li><span class="dot">▸</span><span><strong>Under-invoicing imports:</strong> Pay less officially; remainder sent via hawala</span></li>  
+        <li><span class="dot">▸</span><span><strong>Phantom shipments:</strong> Invoice for goods never shipped</span></li>  
+        <li><span class="dot">▸</span><span><strong>Multiple invoicing:</strong> Bill same goods in multiple countries</span></li>  
+        <li><span class="dot">▸</span><span>Red flags: prices far from LME/market benchmarks</span></li>  
+      </ul>  
+    </div>  
+    <div class="tab-visual">  
+      <div class="info-box"><div class="info-box-label">Most Common Method</div><div class="info-box-val">Over/Under-Invoicing</div><div class="info-box-sub">Price manipulation of goods to shift value across borders</div><div class="progress-track"><div class="progress-bar" data-width="65" style="background:var(--amber)"></div></div></div>  
+      <div class="info-box"><div class="info-box-label">Reference Tool</div><div class="info-box-val">LME Benchmarking</div><div class="info-box-sub">Compare invoice price vs market price to detect manipulation</div><div class="progress-track"><div class="progress-bar" data-width="80"></div></div></div>  
+    </div>  
+  </div>  
+  <div class="tab-panel" id="t5">  
+    <div class="tab-content">  
+      <h3>Cryptocurrency-Based Crime</h3>  
+      <p>Crypto's pseudonymity and speed make it attractive for layering. Blockchain analytics now provides sophisticated tracing tools.</p>  
+      <ul class="tab-list">  
+        <li><span class="dot">▸</span><span><strong>Crypto Mixers/Tumblers:</strong> Pool and scramble crypto to break transaction trail</span></li>  
+        <li><span class="dot">▸</span><span><strong>Chain Hopping:</strong> Bitcoin → Monero → Ethereum to obscure trail</span></li>  
+        <li><span class="dot">▸</span><span><strong>NFT Wash Trading:</strong> Buy/sell NFTs between own wallets at inflated prices</span></li>  
+        <li><span class="dot">▸</span><span><strong>DeFi Layering:</strong> Decentralized exchanges with no KYC</span></li>  
+        <li><span class="dot">▸</span><span>Tools: Chainalysis, Elliptic, CipherTrace for blockchain analytics</span></li>  
+      </ul>  
+    </div>  
+    <div class="tab-visual">  
+      <div class="info-box"><div class="info-box-label">Hardest to Trace</div><div class="info-box-val">Monero (XMR)</div><div class="info-box-sub">Privacy coin with ring signatures — near-zero traceability</div><div class="progress-track"><div class="progress-bar" data-width="95" style="background:var(--red)"></div></div></div>  
+      <div class="info-box"><div class="info-box-label">India Regulatory</div><div class="info-box-val">VDA under PMLA</div><div class="info-box-sub">Virtual Digital Assets under PMLA 2023; VASPs must file STRs</div><div class="progress-track"><div class="progress-bar" data-width="60" style="background:var(--amber)"></div></div></div>  
+    </div>  
+  </div>  
+</section>  <!-- PROCESS -->  <section id="process">  
+  <div class="section-wrap">  
+    <div class="reveal">  
+      <div class="section-label">Investigation Workflow</div>  
+      <h2 class="section-title">TM Process — Step by Step</h2>  
+      <p class="section-sub">From raw transaction data to regulatory filing — the complete investigation lifecycle.</p>  
+    </div>  
+    <div class="timeline">  
+      <div class="tl-item reveal">  
+        <div class="tl-left"><div class="tl-card"><h4>Data Ingestion</h4><p>Transaction data from CBS, UPI, SWIFT, ATM, and card networks flows into the monitoring engine in real-time.</p></div></div>  
+        <div class="tl-center"><div class="tl-dot">01</div></div>  
+        <div class="tl-right tl-blank"></div>  
+      </div>  
+      <div class="tl-item reveal">  
+        <div class="tl-left tl-blank"></div>  
+        <div class="tl-center"><div class="tl-dot">02</div></div>  
+        <div class="tl-right"><div class="tl-card"><h4>Data Enrichment</h4><p>Raw transactions enriched with KYC profile, risk rating, geographic risk, PEP status, and behavioral baseline.</p></div></div>  
+      </div>  
+      <div class="tl-item reveal">  
+        <div class="tl-left"><div class="tl-card"><h4>Rule / Model Processing</h4><p>Rule engine tests threshold conditions simultaneously with ML models scoring behavioral anomalies.</p></div></div>  
+        <div class="tl-center"><div class="tl-dot">03</div></div>  
+        <div class="tl-right tl-blank"></div>  
+      </div>  
+      <div class="tl-item reveal">  
+        <div class="tl-left tl-blank"></div>  
+        <div class="tl-center"><div class="tl-dot">04</div></div>  
+        <div class="tl-right"><div class="tl-card"><h4>Alert Generation</h4><p>Breached rules or high anomaly scores generate prioritized alerts (High / Medium / Low) queued for analyst review.</p></div></div>  
+      </div>  
+      <div class="tl-item reveal">  
+        <div class="tl-left"><div class="tl-card"><h4>Level 1 Review</h4><p>Analyst reviews customer profile, transaction history, and red flags. Decision: Close as false positive or Escalate.</p></div></div>  
+        <div class="tl-center"><div class="tl-dot">05</div></div>  
+        <div class="tl-right tl-blank"></div>  
+      </div>  
+      <div class="tl-item reveal">  
+        <div class="tl-left tl-blank"></div>  
+        <div class="tl-center"><div class="tl-dot">06</div></div>  
+        <div class="tl-right"><div class="tl-card"><h4>L2 Deep Investigation</h4><p>12-month history review, network analysis, adverse media, sanctions recheck, open-source intelligence.</p></div></div>  
+      </div>  
+      <div class="tl-item reveal">  
+        <div class="tl-left"><div class="tl-card"><h4>STR Filing</h4><p>Structured Suspicious Transaction Report filed with FIU-IND within 7 days. Subject never informed (tipping-off prohibition).</p></div></div>  
+        <div class="tl-center"><div class="tl-dot" style="border-color:var(--red);color:var(--red)">07</div></div>  
+        <div class="tl-right tl-blank"></div>  
+      </div>  
+    </div>  
+  </div>  
+</section>  <!-- CASE STUDIES -->  <section id="cases" style="background:var(--deep);border-top:1px solid var(--border)">  
+  <div class="section-wrap">  
+    <div class="reveal">  
+      <div class="section-label">Real Investigation Scenarios</div>  
+      <h2 class="section-title">Case Studies</h2>  
+      <p class="section-sub">Click any case to open the full investigation file.</p>  
+    </div>  
+    <div class="cases-grid reveal">  
+      <div class="case-card" onclick="openModal('m1')"><div class="case-open">+</div><div class="case-num">CASE · 001</div><div class="case-title">Classic Structuring — Vegetable Merchant</div><div class="case-desc">4 cash deposits of ₹8.8L–₹9.7L across branches in 5 days. Total: ₹37.5L. Inconsistent with stated income.</div><div class="case-verdict sar">⚡ STR FILED</div></div>  
+      <div class="case-card" onclick="openModal('m2')"><div class="case-open">+</div><div class="case-num">CASE · 002</div><div class="case-title">Money Mule — Digital Payments</div><div class="case-desc">College student's UPI wallet: 45 transactions from 38 VPAs in 4 hours. ₹4.2L received, immediately forwarded.</div><div class="case-verdict sar">⚡ STR FILED</div></div>  
+      <div class="case-card" onclick="openModal('m3')"><div class="case-open">+</div><div class="case-num">CASE · 003</div><div class="case-title">Round-Tripping via Mauritius</div><div class="case-desc">₹22Cr sent to BVI entity. 60 days later ₹23Cr received as "FDI" from Mauritius. Classic round-trip laundering.</div><div class="case-verdict sar">⚡ STR FILED</div></div>  
+      <div class="case-card" onclick="openModal('m4')"><div class="case-open">+</div><div class="case-num">CASE · 004</div><div class="case-title">Dormant NRI Account — Legitimate</div><div class="case-desc">Account dormant 14 months. Receives ₹28L via SWIFT from UK bank. Customer returning from overseas posting.</div><div class="case-verdict clear">✓ ALERT CLOSED</div></div>  
+      <div class="case-card" onclick="openModal('m5')"><div class="case-open">+</div><div class="case-num">CASE · 005</div><div class="case-title">Crypto Ransomware Conversion</div><div class="case-desc">₹1.2Cr from VDA exchange. Blockchain analytics reveals funds from ransomware-linked wallet via crypto mixer.</div><div class="case-verdict sar">⚡ STR FILED</div></div>  
+      <div class="case-card" onclick="openModal('m6')"><div class="case-open">+</div><div class="case-num">CASE · 006</div><div class="case-title">Real Estate — Bulk Cash Commission</div><div class="case-desc">₹25L cash deposited as "commission" on ₹3.2Cr property deal. Commission rate anomalous at 7.8%.</div><div class="case-verdict pending">⏳ UNDER REVIEW</div></div>  
+    </div>  
+  </div>  
+</section>  <!-- MODALS -->  <div class="modal-overlay" id="modal-m1">  
+  <div class="modal">  
+    <div class="modal-header"><div><div style="font-family:var(--mono);font-size:10px;color:var(--cyan);margin-bottom:6px">CASE · 001 · RETAIL BANKING</div><div style="font-family:var(--title);font-size:18px;color:var(--head)">Classic Structuring — Vegetable Merchant</div></div><button class="modal-close" onclick="closeModal('m1')">✕</button></div>  
+    <div class="modal-body">  
+      <div class="modal-grid">  
+        <div class="mfield"><label>Customer Profile</label><p>Ramesh Gupta, 45. Vegetable merchant. Declared monthly turnover: ₹80K–₹1L. Account age: 8 years. Cooperative Bank, Pune.</p></div>  
+        <div class="mfield"><label>Alert Triggered</label><p>Structuring alert. 4 cash deposits in 5 days totalling ₹37.5L. Each: ₹8.8L–₹9.7L — all below ₹10L CTR threshold.</p></div>  
+        <div class="mfield"><label>Red Flags</label><p>Amounts just below threshold. Deposits at 4 different branches. Total is 37x monthly declared turnover. No prior large deposits in 8 years.</p></div>  
+        <div class="mfield"><label>Investigation Finding</label><p>Adverse media linked customer to alleged illegal land deal. Subsequent wire transfers went to shell-like entities. No credible explanation obtained.</p></div>  
+      </div>  
+      <div class="modal-verdict sar">⚡ STR Filed with FIU-IND. Account placed under enhanced monitoring. Pattern consistent with structuring + placement stage of money laundering.</div>  
+    </div>  
+  </div>  
+</div>  <div class="modal-overlay" id="modal-m2">  
+  <div class="modal">  
+    <div class="modal-header"><div><div style="font-family:var(--mono);font-size:10px;color:var(--cyan);margin-bottom:6px">CASE · 002 · DIGITAL PAYMENTS</div><div style="font-family:var(--title);font-size:18px;color:var(--head)">Money Mule — Digital Payments Platform</div></div><button class="modal-close" onclick="closeModal('m2')">✕</button></div>  
+    <div class="modal-body">  
+      <div class="modal-grid">  
+        <div class="mfield"><label>Customer Profile</label><p>Anjali Sharma, 24, college student. UPI wallet opened 3 months ago. Min-KYC (Aadhaar OTP only).</p></div>  
+        <div class="mfield"><label>Alert Triggered</label><p>Velocity alert — 45 UPI transactions from 38 different VPAs in 4 hours. ₹4,20,000 inflow immediately forwarded to 3 unknown UPI IDs.</p></div>  
+        <div class="mfield"><label>Red Flags</label><p>Account 3 months old. 38 different senders. Zero fund retention. No organic spending. Sender VPAs linked to phishing complaints on CCRP portal.</p></div>  
+        <div class="mfield"><label>Device Analysis</label><p>Account accessed via same device as two other previously flagged mule accounts. Strong indicator of organized mule network.</p></div>  
+      </div>  
+      <div class="modal-verdict sar">⚡ STR Filed. Account suspended. Information shared with CERT-In and Cyber Crime Cell. Customer likely a recruited mule.</div>  
+    </div>  
+  </div>  
+</div>  <div class="modal-overlay" id="modal-m3">  
+  <div class="modal">  
+    <div class="modal-header"><div><div style="font-family:var(--mono);font-size:10px;color:var(--cyan);margin-bottom:6px">CASE · 003 · CORPORATE BANKING</div><div style="font-family:var(--title);font-size:18px;color:var(--head)">Round-Tripping via Mauritius Route</div></div><button class="modal-close" onclick="closeModal('m3')">✕</button></div>  
+    <div class="modal-body">  
+      <div class="modal-grid">  
+        <div class="mfield"><label>Customer</label><p>Sunrise Infrastructure Pvt. Ltd., Mumbai. Construction company, 3 years old. Directors changed twice in 18 months.</p></div>  
+        <div class="mfield"><label>Alert Triggered</label><p>₹22Cr sent abroad as "equity investment" to BVI entity. 60 days later ₹23Cr received as "FDI" from Mauritius entity.</p></div>  
+        <div class="mfield"><label>Red Flags</label><p>Amount and timing suggest same funds returning. FDI purpose stated as "general business development." Director linked to previously flagged entity.</p></div>  
+        <div class="mfield"><label>Finding</label><p>BVI and Mauritius entities share a nominee director. Beneficial owner traced to one of the Indian company's own directors. Classic round-tripping scheme.</p></div>  
+      </div>  
+      <div class="modal-verdict sar">⚡ STR Filed. FEMA reporting initiated. ED and SEBI notified per regulatory obligations.</div>  
+    </div>  
+  </div>  
+</div>  <div class="modal-overlay" id="modal-m4">  
+  <div class="modal">  
+    <div class="modal-header"><div><div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-bottom:6px">CASE · 004 · FALSE POSITIVE</div><div style="font-family:var(--title);font-size:18px;color:var(--head)">Dormant NRI Account — Repatriation</div></div><button class="modal-close" onclick="closeModal('m4')">✕</button></div>  
+    <div class="modal-body">  
+      <div class="modal-grid">  
+        <div class="mfield"><label>Customer</label><p>Vikram Nair, 38. NRI (UAE). Account dormant 14 months while posted abroad. Returns to India permanently. SBI NRI account.</p></div>  
+        <div class="mfield"><label>Alert Triggered</label><p>Dormant account receives ₹28L via SWIFT from Abu Dhabi bank — labeled "repatriation of savings." Followed by FD purchase.</p></div>  
+        <div class="mfield"><label>Evidence Reviewed</label><p>NRI status declared in KYC. UAE bank statement confirms accumulated savings. UAE employment letter provided proactively.</p></div>  
+        <div class="mfield"><label>Analysis</label><p>Dormancy explained by overseas posting. SWIFT source is a regulated UAE bank. Destination is FD — not immediate withdrawal. All documentation consistent.</p></div>  
+      </div>  
+      <div class="modal-verdict clear">✓ Alert Closed — Fully Explained False Positive. NRI repatriation is a common, commercially logical life event.</div>  
+    </div>  
+  </div>  
+</div>  <div class="modal-overlay" id="modal-m5">  
+  <div class="modal">  
+    <div class="modal-header"><div><div style="font-family:var(--mono);font-size:10px;color:var(--cyan);margin-bottom:6px">CASE · 005 · CRYPTO</div><div style="font-family:var(--title);font-size:18px;color:var(--head)">Crypto Ransomware Proceeds</div></div><button class="modal-close" onclick="closeModal('m5')">✕</button></div>  
+    <div class="modal-body">  
+      <div class="modal-grid">  
+        <div class="mfield"><label>Customer</label><p>Arjun Mehta, 29. Freelance cryptocurrency trader. Monthly activity typically ₹50K–₹80K.</p></div>  
+        <div class="mfield"><label>Alert Triggered</label><p>₹1.2Cr received from a VDA exchange over 3 weeks. Immediately transferred to 8 different bank accounts. Volume 15x prior baseline.</p></div>  
+        <div class="mfield"><label>Blockchain Analytics</label><p>Crypto holdings accumulated within 10 days. Funds passed through a known crypto mixer. Originating wallet linked to ransomware attack by Chainalysis.</p></div>  
+        <div class="mfield"><label>Receiving Accounts</label><p>8 receiving bank accounts were newly opened by unrelated individuals — confirmed mule network. Arjun's account used as conversion layer.</p></div>  
+      </div>  
+      <div class="modal-verdict sar">⚡ STR Filed. Account suspended. Exchange notified. Referred to cybercrime cell as potential ransomware proceeds.</div>  
+    </div>  
+  </div>  
+</div>  <div class="modal-overlay" id="modal-m6">  
+  <div class="modal">  
+    <div class="modal-header"><div><div style="font-family:var(--mono);font-size:10px;color:var(--amber);margin-bottom:6px">CASE · 006 · UNDER REVIEW</div><div style="font-family:var(--title);font-size:18px;color:var(--head)">Real Estate Agent — Anomalous Commission</div></div><button class="modal-close" onclick="closeModal('m6')">✕</button></div>  
+    <div class="modal-body">  
+      <div class="modal-grid">  
+        <div class="mfield"><label>Customer</label><p>Harish Malhotra, 48. Real estate broker, Gurugram. Commission-based income. Account 5 years old. Risk: Medium-High.</p></div>  
+        <div class="mfield"><label>Alert Triggered</label><p>₹25L in cash deposited over 3 days. Stated reason: "commission from property sale."</p></div>  
+        <div class="mfield"><label>Analysis</label><p>Property sale: ₹3.2Cr. Standard 2% commission = ₹64,000. ₹25L commission = 7.8% — commercially unusual. No registered commission agreement provided.</p></div>  
+        <div class="mfield"><label>Status</label><p>Story partially plausible. Cash format and rate are both flagged. Additional documentation requested under CDD review.</p></div>  
+      </div>  
+      <div class="modal-verdict" style="background:rgba(255,183,0,.06);border:1px solid rgba(255,183,0,.2);color:var(--amber)">⏳ Escalated to Level 2. Awaiting commission agreement and counterparty confirmation. 7-day STR clock running.</div>  
+    </div>  
+  </div>  
+</div>  <!-- RED FLAGS -->  <section id="redflags">  
+  <div class="section-wrap" style="background:var(--panel)">  
+    <div class="reveal">  
+      <div class="section-label">Indicators of Suspicion</div>  
+      <h2 class="section-title">50+ Red Flag Indicators</h2>  
+      <p class="section-sub">Filter by category. Multiple red flags together dramatically elevate suspicion.</p>  
+    </div>  
+    <div class="rf-filter reveal">  
+      <button class="rf-filter-btn active" data-cat="all">All</button>  
+      <button class="rf-filter-btn" data-cat="customer">Customer Behavior</button>  
+      <button class="rf-filter-btn" data-cat="transaction">Transaction Pattern</button>  
+      <button class="rf-filter-btn" data-cat="corporate">Corporate</button>  
+      <button class="rf-filter-btn" data-cat="digital">Digital / Fintech</button>  
+      <button class="rf-filter-btn" data-cat="geo">Geographic</button>  
+    </div>  
+    <div class="rf-grid reveal">  
+      <div class="rf-item" data-cat="customer"><span class="rf-flag">🚩</span>Customer nervous/evasive about source of funds</div>  
+      <div class="rf-item" data-cat="customer"><span class="rf-flag">🚩</span>Unusual knowledge of AML reporting thresholds</div>  
+      <div class="rf-item" data-cat="customer"><span class="rf-flag">🚩</span>Multiple transactions just below reporting limits</div>  
+      <div class="rf-item" data-cat="customer"><span class="rf-flag">🚩</span>Offers premium for expedited processing of unusual transactions</div>  
+      <div class="rf-item" data-cat="customer"><span class="rf-flag">🚩</span>Refuses to provide source of funds documentation</div>  
+      <div class="rf-item" data-cat="customer"><span class="rf-flag">🚩</span>Multiple accounts with no apparent business purpose</div>  
+      <div class="rf-item" data-cat="customer"><span class="rf-flag">🚩</span>Transactions inconsistent with stated occupation</div>  
+      <div class="rf-item" data-cat="customer"><span class="rf-flag">🚩</span>Frequently changes contact information or address</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Large cash deposits immediately followed by international wire transfers</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Funds enter and immediately exit — pure pass-through behavior</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Consistent round-dollar transactions (₹5,00,000 exactly)</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Many small deposits from multiple unknown sources, one large withdrawal</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Sudden surge in activity after extended dormancy period</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Transactions consistently occurring at unusual hours (2–4 AM)</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Multiple accounts sending identical amounts to same beneficiary</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Frequent transaction cancellations and re-bookings</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Transaction volume 5x+ above customer's established baseline</div>  
+      <div class="rf-item" data-cat="transaction"><span class="rf-flag">🚩</span>Activity inconsistent with business's industry sector</div>  
+      <div class="rf-item" data-cat="corporate"><span class="rf-flag">🚩</span>Company has no verifiable employees, website, or physical address</div>  
+      <div class="rf-item" data-cat="corporate"><span class="rf-flag">🚩</span>Business transactions far exceed declared GST/turnover filings</div>  
+      <div class="rf-item" data-cat="corporate"><span class="rf-flag">🚩</span>Frequent changes in authorized signatories or directors</div>  
+      <div class="rf-item" data-cat="corporate"><span class="rf-flag">🚩</span>Large vague payments: "consulting fees," "management charges"</div>  
+      <div class="rf-item" data-cat="corporate"><span class="rf-flag">🚩</span>Payments to vendors in jurisdictions unrelated to the business</div>  
+      <div class="rf-item" data-cat="corporate"><span class="rf-flag">🚩</span>Invoices do not match trade finance documents (TBML indicator)</div>  
+      <div class="rf-item" data-cat="corporate"><span class="rf-flag">🚩</span>Sudden large loans from foreign entities with unclear repayment</div>  
+      <div class="rf-item" data-cat="corporate"><span class="rf-flag">🚩</span>Foreign remittances received but no exports or foreign clients declared</div>  
+      <div class="rf-item" data-cat="digital"><span class="rf-flag">🚩</span>Multiple accounts accessed from same device/IP in rapid succession</div>  
+      <div class="rf-item" data-cat="digital"><span class="rf-flag">🚩</span>Account consistently accessed via VPN or TOR browser</div>  
+      <div class="rf-item" data-cat="digital"><span class="rf-flag">🚩</span>UPI transaction velocity far exceeds typical peer cohort behavior</div>  
+      <div class="rf-item" data-cat="digital"><span class="rf-flag">🚩</span>Multiple failed KYC attempts then success with different documents</div>  
+      <div class="rf-item" data-cat="digital"><span class="rf-flag">🚩</span>Cryptocurrency purchases immediately after large cash deposits</div>  
+      <div class="rf-item" data-cat="digital"><span class="rf-flag">🚩</span>P2P transfers to newly created unverified wallets</div>  
+      <div class="rf-item" data-cat="digital"><span class="rf-flag">🚩</span>Prepaid cards or gift cards funded by third parties</div>  
+      <div class="rf-item" data-cat="digital"><span class="rf-flag">🚩</span>Account IP location inconsistent with KYC address on file</div>  
+      <div class="rf-item" data-cat="geo"><span class="rf-flag">🚩</span>Transfers to/from FATF grey or black-listed countries</div>  
+      <div class="rf-item" data-cat="geo"><span class="rf-flag">🚩</span>Transactions routed through multiple jurisdictions without logic</div>  
+      <div class="rf-item" data-cat="geo"><span class="rf-flag">🚩</span>Use of correspondent banking in high-risk jurisdictions</div>  
+      <div class="rf-item" data-cat="geo"><span class="rf-flag">🚩</span>Funds passing through free trade zones or offshore financial centers</div>  
+      <div class="rf-item" data-cat="geo"><span class="rf-flag">🚩</span>India-based customer with all transactions in foreign currency</div>  
+      <div class="rf-item" data-cat="geo"><span class="rf-flag">🚩</span>Remittances to conflict zones without documented charitable purpose</div>  
+    </div>  
+  </div>  
+</section>  <!-- QUIZ -->  <section class="quiz-section" id="quiz">  
+  <div class="section-wrap">  
+    <div class="reveal" style="text-align:center">  
+      <div class="section-label" style="justify-content:center">Test Your Knowledge</div>  
+      <h2 class="section-title" style="text-align:center">TM Analyst Challenge</h2>  
+      <p class="section-sub" style="margin:0 auto">Analyse each scenario and decide: Suspicious or Legitimate?</p>  
+    </div>  
+    <div class="quiz-card reveal" id="quiz-container">  
+      <div class="quiz-q" id="quiz-question"></div>  
+      <div class="quiz-scenario" id="quiz-scenario"></div>  
+      <div class="quiz-options" id="quiz-options"></div>  
+      <div class="quiz-result" id="quiz-result"></div>  
+      <div class="quiz-nav">  
+        <div class="quiz-counter"><span id="q-current">1</span> / <span id="q-total">5</span></div>  
+        <div class="quiz-progress" id="quiz-dots"></div>  
+        <button class="btn-primary" id="quiz-next" onclick="nextQuestion()" style="display:none;font-size:11px;padding:10px 20px">NEXT →</button>  
+      </div>  
+    </div>  
+  </div>  
+</section>  <!-- FOOTER -->  <footer>  
+  <div class="footer-logo">AML · INTELLIGENCE</div>  
+  <div class="footer-line"></div>  
+  <p class="footer-text">TRANSACTION MONITORING MASTER GUIDE · 2025 EDITION · FOR EDUCATIONAL PURPOSES</p>  
+  <p style="font-family:var(--mono);font-size:10px;color:var(--text2);margin-top:8px;letter-spacing:.08em">COVERING PMLA · FIU-IND · RBI · FATF · KYC · AML · CFT COMPLIANCE</p>  
+</footer>  <script>  
+// CURSOR  
+const cursor=document.getElementById('cursor'),cursorRing=document.getElementById('cursor-ring');  
+document.addEventListener('mousemove',e=>{  
+  cursor.style.left=e.clientX+'px';cursor.style.top=e.clientY+'px';  
+  setTimeout(()=>{cursorRing.style.left=e.clientX+'px';cursorRing.style.top=e.clientY+'px'},80);  
+});  
+document.querySelectorAll('a,button,.case-card,.feat-card').forEach(el=>{  
+  el.addEventListener('mouseenter',()=>document.body.classList.add('cursor-hover'));  
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('cursor-hover'));  
+});  
+  
+// CANVAS  
+const canvas=document.getElementById('bg-canvas'),ctx=canvas.getContext('2d');  
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}  
+resizeCanvas();window.addEventListener('resize',resizeCanvas);  
+const pts=Array.from({length:120},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.5+.5}));  
+function drawCanvas(){  
+  ctx.clearRect(0,0,canvas.width,canvas.height);  
+  pts.forEach(p=>{  
+    p.x+=p.vx;p.y+=p.vy;  
+    if(p.x<0||p.x>canvas.width)p.vx*=-1;  
+    if(p.y<0||p.y>canvas.height)p.vy*=-1;  
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);  
+    ctx.fillStyle='rgba(0,200,255,.4)';ctx.fill();  
+  });  
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){  
+    const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);  
+    if(d<120){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(0,200,255,${.06*(1-d/120)})`;ctx.lineWidth=.5;ctx.stroke();}  
+  }  
+  requestAnimationFrame(drawCanvas);  
+}  
+drawCanvas();  
+  
+// SCROLL  
+const scrollBar=document.getElementById('scroll-progress'),nav=document.getElementById('navbar');  
+window.addEventListener('scroll',()=>{  
+  scrollBar.style.width=(window.scrollY/(document.body.scrollHeight-window.innerHeight)*100)+'%';  
+  nav.classList.toggle('scrolled',window.scrollY>50);  
+});  
+  
+// REVEAL  
+const obs=new IntersectionObserver(entries=>entries.forEach((e,i)=>{if(e.isIntersecting)setTimeout(()=>e.target.classList.add('visible'),i*80);}),{threshold:.1});  
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));  
+  
+// COUNTERS  
+function animCount(el,target,suffix='',dur=1500){  
+  let start=null;  
+  (function step(ts){if(!start)start=ts;const p=Math.min((ts-start)/dur,1);el.textContent=Math.floor(p*target)+(p===1?suffix:'');if(p<1)requestAnimationFrame(step);})(performance.now());  
+}  
+new IntersectionObserver(entries=>{  
+  if(entries[0].isIntersecting){  
+    setTimeout(()=>animCount(document.getElementById('counter1'),15),400);  
+    setTimeout(()=>animCount(document.getElementById('counter2'),50,'+'),500);  
+    setTimeout(()=>animCount(document.getElementById('counter3'),15),600);  
+    setTimeout(()=>{let s=null;(function step(ts){if(!s)s=ts;const p=Math.min((ts-s)/1500,1);document.getElementById('counter4').textContent='$'+parseFloat((p*2).toFixed(1))+'T';if(p<1)requestAnimationFrame(step);})(performance.now());},700);  
+  }  
+},{threshold:.5}).observe(document.querySelector('.hero'));  
+  
+// TABS  
+document.querySelectorAll('.tab-btn').forEach(btn=>{  
+  btn.addEventListener('click',()=>{  
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));  
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));  
+    btn.classList.add('active');  
+    const panel=document.getElementById(btn.dataset.tab);  
+    panel.classList.add('active');  
+    setTimeout(()=>panel.querySelectorAll('.progress-bar').forEach(bar=>bar.style.width=bar.dataset.width+'%'),100);  
+  });  
+});  
+setTimeout(()=>document.querySelectorAll('#t1 .progress-bar').forEach(bar=>bar.style.width=bar.dataset.width+'%'),800);  
+  
+// RED FLAG FILTER  
+document.querySelectorAll('.rf-filter-btn').forEach(btn=>{  
+  btn.addEventListener('click',()=>{  
+    document.querySelectorAll('.rf-filter-btn').forEach(b=>b.classList.remove('active'));  
+    btn.classList.add('active');  
+    const cat=btn.dataset.cat;  
+    document.querySelectorAll('.rf-item').forEach(item=>{  
+      item.classList.toggle('hidden',cat!=='all'&&item.dataset.cat!==cat);  
+    });  
+  });  
+});  
+  
+// MODALS  
+function openModal(id){document.getElementById('modal-'+id).classList.add('open');document.body.style.overflow='hidden';}  
+function closeModal(id){document.getElementById('modal-'+id).classList.remove('open');document.body.style.overflow='';}  
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m){m.classList.remove('open');document.body.style.overflow=''}}));  
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>{m.classList.remove('open');document.body.style.overflow=''})});  
+  
+// QUIZ  
+const quizData=[  
+  {q:"Alert: Possible Structuring",scenario:"Priya is a homemaker, 34. Account shows monthly grocery/utility spends ₹25K–₹35K. Her husband's salary of ₹60K credits monthly. This month: 8 transfers of ₹49,000–₹50,000 from 8 different unknown individuals (total ₹3,92,000). She immediately transfers the entire amount to one account. When called, says 'it's from my online business.'",options:["A — Close: Legitimate online business income","B — Escalate/File STR: Suspicious mule activity","C — Request documentation and hold for 7 days","D — Close: Amount is below reporting threshold"],correct:1,explanation:"🚩 SUSPICIOUS. Red flags: (1) Homemaker with no declared online business. (2) 8 different unknown payors — classic mule aggregation. (3) Amounts just below ₹50K. (4) Immediate complete outflow — pure pass-through. (5) Vague explanation with no documentation. File STR."},  
+  {q:"Alert: Dormant Account Reactivation",scenario:"Suresh Nair, 45, NRI (UAE). Account dormant for 18 months while posted abroad. He returns to India permanently. Account receives ₹42 lakh from an Abu Dhabi bank — labeled 'repatriation of savings.' He purchases a FD of ₹40L and keeps ₹2L for expenses. He voluntarily provides Emirates ID, UAE bank statement, and UAE exit permit.",options:["A — Close: Fully explained NRI repatriation","B — File STR: Large dormant account transaction","C — Escalate for EDD — NRI accounts are high risk","D — Request additional documentation before deciding"],correct:0,explanation:"✅ NOT SUSPICIOUS. NRI repatriation is a standard, legitimate life event. All documentation was provided proactively. UAE bank statement confirms source. FD purchase (not immediate withdrawal) supports legitimate intent."},  
+  {q:"Alert: Corporate Vendor Payments",scenario:"TechBridge Consulting Pvt. Ltd. makes 6 outgoing NEFT transfers in a single day — all exactly ₹5,00,000 each — to 6 different companies. All 6 recipient companies were incorporated in the last 6 months. Total: ₹30,00,000. The narration on all 6 transfers says 'consulting charges.'",options:["A — Close: Legitimate B2B consulting payments","B — Close: Amounts are individually not suspicious","C — File STR: Clear structuring and shell company indicators","D — Request invoices and investigate recipients first"],correct:3,explanation:"🔍 ESCALATE — Request invoices first. Red flags: (1) All exactly same round amount. (2) All 6 recipients newly incorporated — shell company indicators. (3) 'Consulting charges' is a common ML descriptor. Verify if real companies exist. If invoices don't exist — file STR immediately."},  
+  {q:"Alert: Seasonal Business Surge",scenario:"Raju Sweets, a traditional sweet shop in Bhopal. During Diwali season (Oct–Dec), cash deposits surge to ₹8–9L/week vs ₹1–2L/week the rest of the year. Owner is 55, family has run the shop 30 years. GST returns show consistent seasonal revenue spikes matching the deposits.",options:["A — File STR: Deposits approach CTR threshold","B — Close: Seasonal business pattern with corroborating GST data","C — Request explanation letter from owner","D — Escalate: 4–9x volume increase requires EDD"],correct:1,explanation:"✅ NOT SUSPICIOUS. Cash-intensive seasonal businesses are expected to show transaction spikes. Key factors: (1) Sweet shops are a known cash-heavy business. (2) Diwali season is a documented revenue driver. (3) GST returns corroborate the surge. (4) 30-year business history. Close with documentation."},  
+  {q:"Alert: PEP-Connected Large Transfer",scenario:"A state-level minister's wife receives ₹1.5 crore into her personal savings account labeled 'loan repayment' from a construction company that was awarded a government contract 3 months ago. No prior transaction history exists between the two parties. No loan agreement is on file.",options:["A — Close: Loan repayments are legitimate transactions","B — Request loan agreement before deciding","C — File STR immediately: Classic bribery/kickback pattern","D — Escalate to L2 with 7-day review window"],correct:2,explanation:"⚡ FILE STR IMMEDIATELY. Highest-risk combination: (1) PEP-connected person receiving funds from a government contractor — textbook corruption/kickback. (2) No prior documented loan relationship. (3) Timing: payment 3 months after contract award. (4) Amount disproportionate to personal savings account profile."}  
+];  
+let currentQ=0,score=0,answered=false;  
+function renderQuiz(){  
+  const q=quizData[currentQ];  
+  document.getElementById('quiz-question').textContent=q.q;  
+  document.getElementById('quiz-scenario').textContent=q.scenario;  
+  const opts=document.getElementById('quiz-options');  
+  opts.innerHTML='';  
+  q.options.forEach((opt,i)=>{  
+    const btn=document.createElement('button');  
+    btn.className='quiz-opt';  
+    btn.innerHTML=`<span class="quiz-opt-letter">${String.fromCharCode(65+i)}</span>${opt.slice(4)}`;  
+    btn.onclick=()=>selectAnswer(i);  
+    opts.appendChild(btn);  
+  });  
+  document.getElementById('quiz-result').className='quiz-result';  
+  document.getElementById('quiz-next').style.display='none';  
+  answered=false;  
+  const dots=document.getElementById('quiz-dots');  
+  dots.innerHTML='';  
+  quizData.forEach((_,i)=>{const d=document.createElement('div');d.className='quiz-dot'+(i<currentQ?' done':i===currentQ?' current':'');dots.appendChild(d);});  
+  document.getElementById('q-current').textContent=currentQ+1;  
+  document.getElementById('q-total').textContent=quizData.length;  
+}  
+function selectAnswer(idx){  
+  if(answered)return;answered=true;  
+  const q=quizData[currentQ];  
+  const btns=document.querySelectorAll('.quiz-opt');  
+  btns.forEach(b=>b.disabled=true);  
+  btns[idx].classList.add(idx===q.correct?'correct':'wrong');  
+  if(idx!==q.correct)btns[q.correct].classList.add('correct');  
+  if(idx===q.correct)score++;  
+  const res=document.getElementById('quiz-result');  
+  res.className='quiz-result show '+(idx===q.correct?'correct-res':'wrong-res');  
+  res.textContent=q.explanation;  
+  document.getElementById('quiz-next').style.display='block';  
+}  
+function nextQuestion(){  
+  currentQ++;  
+  if(currentQ>=quizData.length){  
+    const pct=Math.round(score/quizData.length*100);  
+    document.getElementById('quiz-container').innerHTML=`<div style="text-align:center;padding:20px"><div style="font-family:var(--title);font-size:60px;color:${pct>=80?'var(--green)':pct>=60?'var(--amber)':'var(--red)'};margin-bottom:16px">${pct}%</div><div style="font-family:var(--title);font-size:22px;color:var(--head);margin-bottom:12px">${score}/${quizData.length} Correct</div><div style="font-size:15px;color:var(--text2);margin-bottom:28px">${pct>=80?'Excellent analyst judgment!':pct>=60?'Good foundation. Review missed cases.':'Review TM process and typologies.'}</div><button class="btn-primary" onclick="currentQ=0;score=0;renderQuiz()">Retake Quiz</button></div>`;  
+    return;  
+  }  
+  renderQuiz();  
+}  
+renderQuiz();  
+</script>  </body>  
+</html> 
